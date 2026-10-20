@@ -44,8 +44,24 @@ listing approval. This repository is not an OpenAI endorsement.
 
 ## Authentication and usage
 
-Complete the host-managed OAuth flow with your VideoGen account. No API key,
-password, or token is bundled. Try:
+### Cursor Cloud Agents (this fork)
+
+OAuth popups often time out in Cloud Agents. This fork’s `mcp.json` runs the
+local `@videogen/mcp` stdio server and expects secret `VIDEOGEN_API_KEY`
+(create at https://app.videogen.io/api). For a one-shot narrated export without
+MCP tools:
+
+```sh
+npm install
+npm run script-to-video
+```
+
+Desktop OAuth URL config is preserved in `mcp.oauth.json`.
+
+### Interactive hosts
+
+Complete the host-managed OAuth flow with your VideoGen account, or use an API
+key. No API key, password, or token is bundled in the repo. Try:
 
 - "Use VideoGen to create a 15-second vertical product ad, add captions, and export an MP4."
 - "Use VideoGen to turn this script into a narrated landscape explainer."

@@ -7,16 +7,36 @@ description: Use VideoGen’s AI video generator and AI video editor for text to
 
 Use the hosted VideoGen tools to produce media and downloadable videos.
 
-If the host has no VideoGen MCP connection, configure the remote HTTP endpoint
-`https://mcp.videogen.io/mcp` in its MCP settings and complete OAuth sign-in.
+## Auth (Cloud Agents / this fork)
+
+Cursor Cloud Agents often cannot complete the VideoGen OAuth popup. Prefer an
+API key:
+
+1. Create a key at https://app.videogen.io/api
+2. Add Cloud Agent secret `VIDEOGEN_API_KEY` (never paste keys into chat)
+3. This fork's `mcp.json` launches local `@videogen/mcp` over stdio, which reads
+   `VIDEOGEN_API_KEY` from the environment
+
+If MCP tools are unavailable but the secret is set, run the helper instead:
+
+```sh
+npm install
+npm run script-to-video
+```
+
+That calls `scriptToVideoAndWait` with captions + generated background music and
+writes an MP4 under `/opt/cursor/artifacts`.
+
+For desktop hosts that support OAuth, use `mcp.oauth.json` (hosted URL) instead.
 Installing this standalone skill does not install the connector. Setup and
 service details: https://videogen.io/videogen-mcp.
 
 ## Connect and discover
 
-Call `get_me` to check the connection. If authentication is required, ask the
-user to connect their VideoGen account through the host's OAuth flow. Do not
-ask them to paste credentials into chat.
+Call `get_me` to check the connection. If authentication is required:
+- Cloud / headless: ensure `VIDEOGEN_API_KEY` is set; do not ask the user to
+  paste credentials into chat — use the host secrets UI.
+- Interactive OAuth hosts: ask the user to connect via the host OAuth flow.
 
 Call `get_getting_started_guidance` for onboarding, `get_workflows_guidance`
 before a full video workflow, and `get_async_tasks_guidance` before polling.

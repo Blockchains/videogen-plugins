@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "videogen": {
-      "type": "http",
-      "url": "https://mcp.videogen.io/mcp?vg_client=codex"
+      "command": "npx",
+      "args": ["-y", "@videogen/mcp"],
+      "env": {
+        "VIDEOGEN_API_KEY": "${VIDEOGEN_API_KEY}"
+      }
     }
   }
 }
