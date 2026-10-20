@@ -1,23 +1,23 @@
 {
   "name": "videogen",
-  "version": "1.0.0",
-  "description": "AI video generator and AI video editor. Go from text to video, image to video, or script to video, then export an MP4.",
+  "version": "2.0.0",
+  "description": "Local Cursor/Grok VideoGen — script to narrated video with captions and music. No videogen.io cloud.",
   "author": {
-    "name": "VideoGen",
-    "email": "support@videogen.io",
-    "url": "https://github.com/video-gen"
+    "name": "Blockchains",
+    "url": "https://github.com/Blockchains"
   },
-  "homepage": "https://videogen.io/videogen-mcp",
+  "homepage": "https://github.com/Blockchains/videogen-plugins",
   "license": "MIT",
   "keywords": [
     "ai video editor",
     "ai video generator",
-    "image to video",
     "script to video",
     "text to video",
-    "videogen"
+    "videogen",
+    "cursor",
+    "grok"
   ],
-  "repository": "https://github.com/video-gen/videogen-plugins",
+  "repository": "https://github.com/Blockchains/videogen-plugins",
   "skills": "./skills/",
   "logo": "assets/logo.png",
   "mcpServers": "./mcp.json"

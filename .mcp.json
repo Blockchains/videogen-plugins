@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "videogen": {
-      "command": "npx",
-      "args": ["-y", "@videogen/mcp"],
-      "env": {
-        "VIDEOGEN_API_KEY": "${VIDEOGEN_API_KEY}"
-      }
+      "command": "node",
+      "args": ["local/mcp-server.mjs"]
     }
   }
 }

@@ -1,88 +1,73 @@
 ---
 name: videogen
-description: Use VideoGen’s AI video generator and AI video editor for text to video, image to video, or script to video. Create, edit, caption, and export AI videos and media when the user asks to use VideoGen.
+description: Local VideoGen for Cursor/Grok — script to narrated video with captions and music using Cursor GenerateImage plus a local ffmpeg/espeak pipeline. No videogen.io cloud.
 ---
 
-# VideoGen
+# VideoGen (local Cursor / Grok fork)
 
-Use the hosted VideoGen tools to produce media and downloadable videos.
+This skill drives **local** video production. Do **not** call `videogen.io`,
+`mcp.videogen.io`, `@videogen/sdk`, or `@videogen/mcp`.
 
-## Auth (Cloud Agents / this fork)
+## Architecture
 
-Cursor Cloud Agents often cannot complete the VideoGen OAuth popup. Prefer an
-API key:
+| Step | Owner |
+| --- | --- |
+| Scene stills | Cursor `GenerateImage` (agent) |
+| Narration | local `espeak-ng` via MCP/CLI |
+| Ambient music | local ffmpeg synth |
+| Captions + Ken Burns + mux | local ffmpeg via `script_to_video` |
 
-1. Create a key at https://app.videogen.io/api
-2. Add Cloud Agent secret `VIDEOGEN_API_KEY` (never paste keys into chat)
-3. This fork's `mcp.json` launches local `@videogen/mcp` over stdio, which reads
-   `VIDEOGEN_API_KEY` from the environment
+MCP entrypoint: `node local/mcp-server.mjs` (configured in `mcp.json`).
 
-If MCP tools are unavailable but the secret is set, run the helper instead:
+## Workflow: narrated script → MP4
+
+1. Call MCP `get_me` (or `npm run me`) to verify ffmpeg + espeak-ng.
+2. Generate one or more stills with Cursor **GenerateImage** using the user's
+   full visual-style paragraph (not a short label like `watercolor`). Prefer
+   16:9 unless the user asked otherwise.
+3. Call MCP **`script_to_video`** with:
+   - `script` — spoken narration
+   - `style` — the visual style paragraph
+   - `imagePath` — absolute path to the generated still
+   - `captions: true`, `music: true` unless the user opts out
+4. Return the result's `downloadPath` (local MP4). For Cloud Agents, also copy
+   or write under `/opt/cursor/artifacts/`.
+
+CLI equivalent:
 
 ```sh
-npm install
-npm run script-to-video
+node local/cli.mjs script-to-video \
+  --script "..." \
+  --image /absolute/path/to/still.jpg \
+  --out /opt/cursor/artifacts/my-video
 ```
 
-That calls `scriptToVideoAndWait` with captions + generated background music and
-writes an MP4 under `/opt/cursor/artifacts`.
+## Style guidance
 
-For desktop hosts that support OAuth, use `mcp.oauth.json` (hosted URL) instead.
-Installing this standalone skill does not install the connector. Setup and
-service details: https://videogen.io/videogen-mcp.
+Pass a full style paragraph. Example lock used for hydration content:
 
-## Connect and discover
+> Loose watercolor illustration, visible brushstrokes, soft color bleeds, paper
+> texture, muted palette. A clear uncluttered subject centered in the frame,
+> occupying only the middle half of the image, with generous empty margins on
+> all four sides, no background clutter.
 
-Call `get_me` to check the connection. If authentication is required:
-- Cloud / headless: ensure `VIDEOGEN_API_KEY` is set; do not ask the user to
-  paste credentials into chat — use the host secrets UI.
-- Interactive OAuth hosts: ask the user to connect via the host OAuth flow.
+Image models pack frames with text and clutter unless the style forbids it.
+Keep one subject, empty margins, no on-image text.
 
-Call `get_getting_started_guidance` for onboarding, `get_workflows_guidance`
-before a full video workflow, and `get_async_tasks_guidance` before polling.
-Use the current tool schemas and guidance for accepted inputs and actions.
-Full video generation commonly takes several minutes and uses account credits;
-respect the user's requested scope and budget.
+## Tools
 
-## Choose a workflow
-
-| Intent | Tool |
+| Tool | Purpose |
 | --- | --- |
-| Product ad or shot-by-shot video | `storyboard_to_video` |
-| Narrated video from a script | `script_to_video` |
-| Video around recorded narration | `voiceover_to_video` |
-| Video from a PDF or presentation | `slideshow_to_video` |
-| One generated clip | `prompt_to_video_clip` |
-| Individual image, voice, music, or sound effect | Matching `generate_*` tool |
+| `get_me` | Local engine + dependency check |
+| `get_getting_started_guidance` | This workflow as markdown |
+| `script_to_video` | End-to-end narrated export |
+| `text_to_speech` | WAV-only narration |
 
-For a product ad, a useful default is vertical 9:16 with a hook, product in
-use, and call to action. Preserve the user's chosen format and scene count.
-Storyboard visuals belong in each scene's `prompt`; spoken copy belongs in
-`voiceoverScript`. Prefer a full workflow to manually chaining individual
-media tools when the user wants a complete video.
+If the MCP host has not loaded this server yet, run the CLI directly — same pipeline.
 
-## Transfer files
+## Failure modes
 
-`open_uploader` is a ChatGPT-only interface and is unavailable in these agent hosts.
-Use `upload_file` for small files when the host can supply base64 bytes. For
-larger files, use `create_file_upload`, transfer the bytes to the returned URL
-when supported, then call `get_file` with `wait: true`. If the host cannot
-transfer an attachment, direct the user to upload it in the VideoGen app.
-Never claim upload success without a returned VideoGen `fileId`.
-
-## Wait, edit, and export
-
-Poll `get_workflow_run` for workflows, `get_tool_execution` for media,
-`list_project_remix_actions` for remixes, and `get_project_export` for exports.
-Follow the async guidance until a terminal status; never invent completed
-results, ids, or URLs.
-
-Preserve the returned `projectId`. For requested edits, use `remix_project`
-with actions supported by its current schema, then wait for completion before
-calling `export_project`. Use `saveAsNewProject: true` if the user wants to
-preserve the original. Return the successful export's `downloadUrl`.
-If an edit is unavailable, use `get_app_deep_link` to open the project in VideoGen.
-
-Report terminal failures clearly and retry only as directed by structured
-errors or guidance. For credit or account-access errors, direct the user to
-`https://app.videogen.io`. Do not expose internal model or infrastructure names.
+- Missing `espeak-ng`: install with `sudo apt-get install -y espeak-ng`
+- Missing `ffmpeg`: install ffmpeg
+- No `imagePath`: pipeline falls back to a procedural still (lower quality);
+  always prefer Cursor GenerateImage first
