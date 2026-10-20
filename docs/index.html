@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="VideoGen — self-contained browser AI video generator and editor. No accounts, no cloud APIs."
+    />
+    <title>VideoGen — local AI video studio</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="top">
+        <h1 class="brand">VideoGen</h1>
+        <span class="pill">Runs fully offline in your browser</span>
+      </header>
+
+      <div class="layout">
+        <section class="panel" aria-label="Editor">
+          <p class="lede">
+            Write a line. Paint a look. Export a narrated clip — no cloud, no keys.
+          </p>
+
+          <div class="field">
+            <label for="script">Script</label>
+            <textarea
+              id="script"
+              maxlength="320"
+              placeholder="One or two sentences to narrate"
+            ></textarea>
+          </div>
+
+          <div class="field">
+            <label for="style">Visual style</label>
+            <textarea
+              id="style"
+              maxlength="600"
+              placeholder="Watercolor, palette, composition notes"
+            ></textarea>
+          </div>
+
+          <div class="toggles">
+            <label class="toggle">
+              <input id="captions" type="checkbox" checked />
+              Captions
+            </label>
+            <label class="toggle">
+              <input id="music" type="checkbox" checked />
+              Background music
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="generate" class="btn-primary" type="button">Generate video</button>
+            <button id="speak" class="btn-ghost" type="button">Hear script</button>
+          </div>
+          <p id="status" class="status" role="status"></p>
+          <p class="hint">
+            Generative watercolor, captions, ambient audio, and WebM export all happen on
+            this page. Nothing is uploaded.
+          </p>
+        </section>
+
+        <section class="stage-wrap" aria-label="Preview">
+          <div id="stage" class="stage">
+            <canvas id="preview" width="1280" height="720" aria-label="Video preview canvas"></canvas>
+            <video id="player" controls playsinline></video>
+          </div>
+          <div class="stage-bar">
+            <button id="regen" class="btn-ghost" type="button" disabled>Regenerate look</button>
+            <button id="download" class="btn-primary" type="button" disabled>Download WebM</button>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
