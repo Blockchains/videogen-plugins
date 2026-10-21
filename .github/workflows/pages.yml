@@ -31,8 +31,10 @@ jobs:
           test -f docs/styles.css
           test -f docs/lib/render.js
           test -f docs/lib/audio.js
+          test -f docs/lib/narration.js
           test -f docs/lib/watercolor.js
           test -f docs/favicon.svg
+
           if grep -RInE 'https?://(cdn\.|unpkg\.|jsdelivr\.|mcp\.videogen\.io|api\.videogen\.io)' \
               --exclude-dir=fonts docs; then
             echo "External runtime URL found in docs/" >&2
