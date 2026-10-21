@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - cursor/api-key-cloud-auth-d5ab
   pull_request:
   workflow_dispatch:
 
@@ -17,7 +18,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Always run on PRs/pushes so CI stays green without requiring Pages settings.
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +34,6 @@ jobs:
           test -f docs/lib/audio.js
           test -f docs/lib/watercolor.js
           test -f docs/favicon.svg
-          # No runtime CDN / cloud VideoGen deps in the Pages app
           if grep -RInE 'https?://(cdn\.|unpkg\.|jsdelivr\.|mcp\.videogen\.io|api\.videogen\.io)' \
               --exclude-dir=fonts docs; then
             echo "External runtime URL found in docs/" >&2
@@ -42,10 +41,10 @@ jobs:
           fi
           echo "docs/ studio OK"
 
-  # Deploy only from main once Pages can be enabled/configured.
   deploy:
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    # Deploy on push/dispatch (not on pull_request forks), now that Pages is enabled.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -57,7 +56,6 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
-          # Create/enable the Pages site when the Actions token is allowed to.
           enablement: true
 
       - name: Upload docs/
