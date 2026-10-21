@@ -1,40 +1,24 @@
 {
   "name": "videogen",
-  "version": "1.0.0",
-  "description": "AI video generator and AI video editor. Go from text to video, image to video, or script to video, then export an MP4.",
+  "version": "2.0.0",
+  "description": "Local Cursor/Grok VideoGen — script to narrated video with captions and music. No videogen.io cloud.",
   "author": {
-    "name": "VideoGen",
-    "email": "support@videogen.io",
-    "url": "https://github.com/video-gen"
+    "name": "Blockchains",
+    "url": "https://github.com/Blockchains"
   },
-  "homepage": "https://videogen.io/videogen-mcp",
+  "homepage": "https://github.com/Blockchains/videogen-plugins",
   "license": "MIT",
   "keywords": [
     "ai video editor",
     "ai video generator",
-    "image to video",
     "script to video",
     "text to video",
     "videogen"
   ],
-  "repository": "https://github.com/video-gen/videogen-plugins",
-  "skills": "./skills/",
+  "repository": "https://github.com/Blockchains/videogen-plugins",
+  "skills": [
+    "videogen"
+  ],
   "mcpServers": "./.mcp.json",
-  "interface": {
-    "displayName": "VideoGen - AI Video Generator",
-    "shortDescription": "AI video generator and AI video editor. Go from text to video, image to video, or script to video, then export an MP4.",
-    "developerName": "VideoGen",
-    "category": "Productivity",
-    "capabilities": [
-      "Read",
-      "Write"
-    ],
-    "websiteURL": "https://videogen.io/videogen-mcp",
-    "defaultPrompt": [
-      "Use VideoGen to create a 15-second vertical product ad, add captions, and export an MP4."
-    ],
-    "composerIcon": "./assets/logo.png",
-    "logo": "./assets/logo.png",
-    "longDescription": "Generate professional, editable AI videos and media with your VideoGen account.\n\nGo from text to video, image to video, or script to video with VideoGen’s AI video generator. Then edit and remix your projects in VideoGen’s AI video editor.\n\nTurn a narration script, uploaded voiceover, PDF/slideshow, or scene-by-scene storyboard into a multi-scene video with AI visuals and captions. Or generate a single video clip when you only need a short shot.\n\nCreate images, video clips, voiceovers, music, sound effects, motion graphics, and talking-head avatars. Add captions and transitions, animate stills, export MP4 downloads, and open your projects in the VideoGen app for finer control. Generation uses your VideoGen team credits."
-  }
+  "logo": "assets/logo.png"
 }

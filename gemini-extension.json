@@ -1,10 +1,11 @@
 {
   "name": "videogen",
-  "version": "1.0.0",
-  "description": "AI video generator and AI video editor. Go from text to video, image to video, or script to video, then export an MP4.",
+  "version": "2.0.0",
+  "description": "Local Cursor/Grok VideoGen fork — script to narrated video with captions and music (no videogen.io cloud).",
   "mcpServers": {
     "videogen": {
-      "httpUrl": "https://mcp.videogen.io/mcp?vg_client=gemini"
+      "command": "node",
+      "args": ["${extensionPath}/local/mcp-server.mjs"]
     }
   }
 }

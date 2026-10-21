@@ -1,0 +1,20 @@
+{
+  "name": "videogen-plugins",
+  "private": true,
+  "type": "module",
+  "version": "2.0.0",
+  "description": "Local Cursor/Grok VideoGen fork — narrated video with captions and music, no videogen.io cloud",
+  "bin": {
+    "videogen-local": "./local/cli.mjs",
+    "videogen-mcp": "./local/mcp-server.mjs"
+  },
+  "scripts": {
+    "me": "node local/cli.mjs me",
+    "script-to-video": "node local/cli.mjs script-to-video",
+    "mcp": "node local/mcp-server.mjs",
+    "demo:hydration": "node local/cli.mjs script-to-video --script \"Staying hydrated keeps your body and mind running at their best.\" --image /opt/cursor/artifacts/assets/hydration-watercolor.jpg --out /opt/cursor/artifacts/hydration-watercolor-video"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

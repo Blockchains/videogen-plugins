@@ -1,79 +1,91 @@
-# VideoGen - AI Video Generator
+# VideoGen (local Cursor / Grok fork)
 
-Generate professional, editable AI videos and media directly in Cursor,
-Gemini CLI, and Codex-compatible hosts with your VideoGen account.
+Self-contained VideoGen for [Cursor](https://cursor.com) agents and a
+**browser studio on GitHub Pages** — no videogen.io, no cloud APIs, no keys.
 
-Go from text to video, image to video, or script to video with
-[VideoGen’s AI video generator](https://videogen.io/videogen-mcp). Then edit
-and remix your projects in VideoGen’s AI video editor.
+| Surface | Implementation |
+| --- | --- |
+| **Web app** (`docs/`) | Generative watercolor + captions + music + WebM export in-browser |
+| Agent MCP (`local/`) | Cursor `GenerateImage` + `espeak-ng` + ffmpeg → MP4 |
 
-Turn a narration script, uploaded voiceover, PDF/slideshow, or scene-by-scene
-storyboard into a multi-scene video with AI visuals and captions. Create
-images, video clips, voiceovers, music, sound effects, motion graphics, and
-talking-head avatars. Add captions and transitions, animate stills, and
-export MP4 downloads.
+Live site (after Pages deploy):
+`https://blockchains.github.io/videogen-plugins/`
 
-## Install
+Fork: `github.com/Blockchains/videogen-plugins`
 
-### Cursor
+## Web studio (GitHub Pages)
 
-Once approved, install VideoGen from the Cursor Marketplace. The Cursor
-manifest is `.cursor-plugin/plugin.json`; `mcp.json` connects the hosted MCP.
-
-### Gemini CLI
+Fully static. Open `docs/index.html` or the deployed Pages URL.
 
 ```sh
-gemini extensions install https://github.com/video-gen/videogen-plugins
+# local preview
+python3 -m http.server -d docs 4173
+# → http://127.0.0.1:4173/
 ```
 
-### Agent skills
+Write a script, tweak the style, generate, regenerate the look, download WebM.
+Captions / music toggles are the built-in editor controls. Nothing is uploaded.
+
+Deploy is automatic via `.github/workflows/pages.yml` (GitHub Actions → Pages).
+
+## Agent CLI requirements
+
+- Node.js 20+
+- `ffmpeg` + `ffprobe`
+- `espeak-ng` (`./scripts/install-local-deps.sh`)
+
+No API keys. No OAuth.
+
+## Install (Cursor)
+
+This repo’s `.cursor-plugin/plugin.json` + `mcp.json` launch:
+
+```json
+{
+  "mcpServers": {
+    "videogen": {
+      "command": "node",
+      "args": ["local/mcp-server.mjs"]
+    }
+  }
+}
+```
+
+Ask the agent:
+
+> Use VideoGen to turn this script into a narrated video with captions and background music: "…"
+
+The skill tells the agent to generate a still with Cursor, then call
+`script_to_video`.
+
+## CLI
 
 ```sh
-npx skills add video-gen/videogen-plugins --skill videogen
+node local/cli.mjs me
+
+node local/cli.mjs script-to-video \
+  --script "Staying hydrated keeps your body and mind running at their best." \
+  --image /path/to/still.jpg \
+  --out /opt/cursor/artifacts/hydration-watercolor-video
 ```
 
-The standalone skill requires a VideoGen MCP connection configured in your
-agent host. This command installs guidance, not the MCP connection itself.
-Use `https://mcp.videogen.io/mcp` in the host's MCP settings and sign in.
+## Demo
 
-### Codex-compatible hosts
+```sh
+npm run demo:hydration
+```
 
-The `.codex-plugin/plugin.json` manifest bundles `skills/` and `.mcp.json`.
-For the independent Codex Plugin Marketplace, use its plugin installer after
-listing approval. This repository is not an OpenAI endorsement.
+## Layout
 
-## Authentication and usage
+```
+local/
+  mcp-server.mjs   # stdio MCP (get_me, script_to_video, …)
+  cli.mjs
+  lib/pipeline.mjs # offline assembler
+skills/videogen/   # agent workflow
+mcp.json           # Cursor MCP → local server
+```
 
-Complete the host-managed OAuth flow with your VideoGen account. No API key,
-password, or token is bundled. Try:
+## License
 
-- "Use VideoGen to create a 15-second vertical product ad, add captions, and export an MP4."
-- "Use VideoGen to turn this script into a narrated landscape explainer."
-- "Use VideoGen to animate this product image and return a download link."
-
-Generation and exports may consume account credits. Connected-account access
-controls project and media permissions. Respect the user's requested scope,
-budget, and existing project choices.
-
-## Network and components
-
-One hosted HTTP MCP connection and one workflow skill. No scripts, lifecycle
-hooks, local executables, dependency installation, or local secret reads.
-
-- `https://mcp.videogen.io/mcp`: tools, guidance, and OAuth discovery/endpoints.
-  The `vg_client` query parameter identifies the host in VideoGen integration
-  attribution; it contains no user identifier or credential.
-- `https://app.videogen.io`: account sign-in and project deep links.
-- Operation-specific upload/download URLs returned by tools: transfer requested
-  media only.
-
-The manifests and endpoint discovery are checked statically. Installation,
-OAuth, and generation in each host still require host-specific verification;
-no successful host test is claimed by this package.
-
-## Ownership and license
-
-Maintained by [VideoGen](https://github.com/video-gen). Contact:
-support@videogen.io. Plugin files are MIT licensed. The hosted service is
-subject to [VideoGen's terms](https://videogen.io/terms-of-service) and
-[privacy policy](https://videogen.io/privacy-policy).
+Plugin files are MIT licensed (see `LICENSE`).

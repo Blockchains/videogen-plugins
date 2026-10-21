@@ -1,0 +1,67 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify static studio
+        run: |
+          set -euo pipefail
+          test -f docs/index.html
+          test -f docs/app.js
+          test -f docs/styles.css
+          test -f docs/lib/render.js
+          test -f docs/lib/audio.js
+          test -f docs/lib/watercolor.js
+          test -f docs/favicon.svg
+          if grep -RInE 'https?://(cdn\.|unpkg\.|jsdelivr\.|mcp\.videogen\.io|api\.videogen\.io)' \
+              --exclude-dir=fonts docs; then
+            echo "External runtime URL found in docs/" >&2
+            exit 1
+          fi
+          echo "docs/ studio OK"
+
+  deploy:
+    needs: verify
+    # github-pages environment allows only main (custom branch policy).
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload docs/
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

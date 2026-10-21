@@ -1,18 +1,18 @@
 {
   "name": "videogen",
   "owner": {
-    "name": "VideoGen",
-    "email": "support@videogen.io"
+    "name": "Blockchains",
+    "url": "https://github.com/Blockchains"
   },
   "metadata": {
-    "description": "Official VideoGen agent plugin",
-    "version": "1.0.0"
+    "description": "Local Cursor/Grok VideoGen fork — narrated video without videogen.io cloud",
+    "version": "2.0.0"
   },
   "plugins": [
     {
       "name": "videogen",
       "source": "./",
-      "description": "AI video generator and AI video editor. Go from text to video, image to video, or script to video, then export an MP4."
+      "description": "Local script-to-video with captions and music via Cursor GenerateImage + ffmpeg/espeak."
     }
   ]
 }

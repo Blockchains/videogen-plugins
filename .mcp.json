@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "videogen": {
-      "type": "http",
-      "url": "https://mcp.videogen.io/mcp?vg_client=codex"
+      "command": "node",
+      "args": ["local/mcp-server.mjs"]
     }
   }
 }

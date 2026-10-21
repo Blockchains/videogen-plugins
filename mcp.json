@@ -1,7 +1,8 @@
 {
   "mcpServers": {
     "videogen": {
-      "url": "https://mcp.videogen.io/mcp?vg_client=cursor"
+      "command": "node",
+      "args": ["local/mcp-server.mjs"]
     }
   }
 }
