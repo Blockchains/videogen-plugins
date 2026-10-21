@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - cursor/api-key-cloud-auth-d5ab
   pull_request:
   workflow_dispatch:
 
@@ -43,8 +42,8 @@ jobs:
 
   deploy:
     needs: verify
-    # Deploy on push/dispatch (not on pull_request forks), now that Pages is enabled.
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # github-pages environment allows only main (custom branch policy).
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
