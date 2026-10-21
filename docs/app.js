@@ -1,5 +1,5 @@
 import { generateVideo } from "./lib/render.js";
-import { speakPreview, stopSpeakPreview } from "./lib/audio.js";
+import { speakPreview, stopSpeakPreview } from "./lib/narration.js";
 
 const DEFAULT_SCRIPT =
   "Staying hydrated keeps your body and mind running at their best.";
@@ -11,6 +11,7 @@ const els = {
   style: document.getElementById("style"),
   captions: document.getElementById("captions"),
   music: document.getElementById("music"),
+  narration: document.getElementById("narration"),
   status: document.getElementById("status"),
   stage: document.getElementById("stage"),
   preview: document.getElementById("preview"),
@@ -70,6 +71,7 @@ async function runGenerate({ newSeed = true } = {}) {
       style: style || DEFAULT_STYLE,
       captions: els.captions.checked,
       music: els.music.checked,
+      narration: els.narration?.checked !== false,
       seed,
       previewCanvas: els.preview,
       onStatus: setStatus,
@@ -105,8 +107,8 @@ els.speak.addEventListener("click", () => {
 });
 
 // Live edit: toggling captions/music marks dirty; regenerate applies
-for (const el of [els.captions, els.music]) {
-  el.addEventListener("change", () => {
+for (const el of [els.captions, els.music, els.narration]) {
+  el?.addEventListener("change", () => {
     if (current) setStatus("Settings changed — regenerate to apply.");
   });
 }

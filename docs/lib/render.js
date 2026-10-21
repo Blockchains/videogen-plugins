@@ -1,5 +1,9 @@
 import { paintWatercolor, hashSeed } from "./watercolor.js";
-import { estimateDurationSec, createSoundtrack, stopSpeakPreview } from "./audio.js";
+import {
+  estimateDurationSec,
+  renderSoundtrackBuffer,
+  stopSpeakPreview,
+} from "./narration.js";
 
 function wrapLines(ctx, text, maxWidth) {
   const words = String(text).trim().split(/\s+/);
@@ -17,14 +21,14 @@ function wrapLines(ctx, text, maxWidth) {
 }
 
 function drawFrame(ctx, still, progress, { script, captions, width, height }) {
-  const zoom = 1 + progress * 0.08;
-  const sw = still.width;
-  const sh = still.height;
+  // Strong Ken Burns: zoom + diagonal drift (clearly moving)
+  const zoom = 1.05 + progress * 0.22;
   const dw = width * zoom;
   const dh = height * zoom;
-  const dx = (width - dw) / 2;
-  const dy = (height - dh) / 2 - progress * 12;
-  ctx.clearRect(0, 0, width, height);
+  const dx = (width - dw) / 2 + progress * width * 0.04;
+  const dy = (height - dh) / 2 - progress * height * 0.05;
+  ctx.fillStyle = "#d7e0db";
+  ctx.fillRect(0, 0, width, height);
   ctx.drawImage(still, dx, dy, dw, dh);
 
   if (captions && script) {
@@ -59,9 +63,12 @@ function pickMime() {
   return "";
 }
 
+function wait(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 /**
- * Render + encode a short narrated clip entirely in-browser.
- * Returns { blob, url, durationSec, stillCanvas }
+ * Render + encode a moving narrated clip entirely in-browser.
  */
 export async function generateVideo(opts) {
   const {
@@ -69,6 +76,7 @@ export async function generateVideo(opts) {
     style,
     captions = true,
     music = true,
+    narration = true,
     seed = Date.now(),
     width = 1280,
     height = 720,
@@ -78,6 +86,7 @@ export async function generateVideo(opts) {
 
   stopSpeakPreview();
   const durationSec = estimateDurationSec(script);
+
   onStatus?.("Painting watercolor still…");
   const still = paintWatercolor({
     width,
@@ -87,84 +96,133 @@ export async function generateVideo(opts) {
     seed: seed ^ hashSeed(style || ""),
   });
 
-  // show first frame
   if (previewCanvas) {
     previewCanvas.width = width;
     previewCanvas.height = height;
-    const pctx = previewCanvas.getContext("2d");
-    drawFrame(pctx, still, 0, { script, captions, width, height });
+    drawFrame(previewCanvas.getContext("2d"), still, 0, {
+      script,
+      captions,
+      width,
+      height,
+    });
   }
 
-  onStatus?.("Composing audio + motion…");
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === "suspended") await audioCtx.resume();
+  onStatus?.("Synthesizing narration + music…");
+  const audioBuffer = await renderSoundtrackBuffer({
+    script,
+    durationSec,
+    music,
+    narration,
+  });
+
+  const mimeType = pickMime();
+  if (!mimeType) {
+    throw new Error("This browser cannot record video (MediaRecorder/WebM unsupported).");
+  }
+
+  onStatus?.("Recording motion + audio…");
 
   const recordCanvas = document.createElement("canvas");
   recordCanvas.width = width;
   recordCanvas.height = height;
-  const rctx = recordCanvas.getContext("2d");
+  // Must be in the document for reliable capture in some engines
+  recordCanvas.style.cssText =
+    "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none";
+  document.body.appendChild(recordCanvas);
+  const rctx = recordCanvas.getContext("2d", { alpha: false });
 
-  const fps = 30;
-  const canvasStream = recordCanvas.captureStream(fps);
-  const { dest } = createSoundtrack(audioCtx, { durationSec, script, music });
+  // captureStream(0) + requestFrame = explicit frame push (fixes frozen single-frame videos)
+  const canvasStream = recordCanvas.captureStream(0);
+  const videoTrack = canvasStream.getVideoTracks()[0];
+
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+    sampleRate: audioBuffer.sampleRate,
+  });
+  if (audioCtx.state === "suspended") await audioCtx.resume();
+
+  const dest = audioCtx.createMediaStreamDestination();
+  const src = audioCtx.createBufferSource();
+  src.buffer = audioBuffer;
+  const gain = audioCtx.createGain();
+  gain.gain.value = 1;
+  src.connect(gain);
+  gain.connect(dest);
+  // Also monitor softly while recording
+  const monitor = audioCtx.createGain();
+  monitor.gain.value = 0.85;
+  gain.connect(monitor);
+  monitor.connect(audioCtx.destination);
 
   const mixed = new MediaStream([
-    ...canvasStream.getVideoTracks(),
+    videoTrack,
     ...dest.stream.getAudioTracks(),
   ]);
-
-  const mimeType = pickMime();
-  if (!mimeType) {
-    await audioCtx.close();
-    throw new Error("This browser cannot record video (MediaRecorder/WebM unsupported).");
-  }
 
   const chunks = [];
   const recorder = new MediaRecorder(mixed, {
     mimeType,
-    videoBitsPerSecond: 4_500_000,
+    videoBitsPerSecond: 6_000_000,
+    audioBitsPerSecond: 192_000,
   });
   recorder.ondataavailable = (e) => {
     if (e.data?.size) chunks.push(e.data);
   };
-
   const stopped = new Promise((resolve, reject) => {
     recorder.onstop = () => resolve();
     recorder.onerror = () => reject(new Error("Recording failed"));
   });
 
+  const fps = 30;
+  const totalFrames = Math.max(Math.round(durationSec * fps), fps * 3);
+  const frameMs = 1000 / fps;
+
+  // Prime first frame before recorder starts
+  drawFrame(rctx, still, 0, { script, captions, width, height });
+  if (typeof videoTrack.requestFrame === "function") videoTrack.requestFrame();
+
   recorder.start(100);
-  onStatus?.("Recording clip…");
+  await wait(40);
+  src.start(0);
 
   const t0 = performance.now();
-  const totalMs = durationSec * 1000;
+  for (let f = 0; f < totalFrames; f++) {
+    const target = t0 + f * frameMs;
+    const delay = target - performance.now();
+    if (delay > 1) await wait(delay);
 
-  await new Promise((resolve) => {
-    const tick = () => {
-      const elapsed = performance.now() - t0;
-      const progress = Math.min(1, elapsed / totalMs);
-      drawFrame(rctx, still, progress, { script, captions, width, height });
-      if (previewCanvas) {
-        const pctx = previewCanvas.getContext("2d");
-        pctx.drawImage(recordCanvas, 0, 0);
-      }
-      if (progress < 1) requestAnimationFrame(tick);
-      else resolve();
-    };
-    requestAnimationFrame(tick);
-  });
+    const progress = totalFrames <= 1 ? 1 : f / (totalFrames - 1);
+    drawFrame(rctx, still, progress, { script, captions, width, height });
+    if (typeof videoTrack.requestFrame === "function") {
+      videoTrack.requestFrame();
+    }
 
-  // small pad so last audio envelopes finish
-  await new Promise((r) => setTimeout(r, 180));
-  recorder.stop();
+    if (previewCanvas && f % 2 === 0) {
+      previewCanvas.getContext("2d").drawImage(recordCanvas, 0, 0);
+    }
+  }
+
+  // Let trailing audio finish into the recorder
+  const remaining = durationSec * 1000 - (performance.now() - t0);
+  if (remaining > 0) await wait(remaining + 120);
+
+  if (recorder.state === "recording") recorder.stop();
   await stopped;
 
-  canvasStream.getTracks().forEach((t) => t.stop());
+  try {
+    src.stop();
+  } catch {
+    /* already ended */
+  }
+  videoTrack.stop();
   dest.stream.getTracks().forEach((t) => t.stop());
   await audioCtx.close();
+  recordCanvas.remove();
 
   const blob = new Blob(chunks, { type: mimeType });
+  if (blob.size < 10_000) {
+    throw new Error("Recording produced an empty/too-small file — try again.");
+  }
   const url = URL.createObjectURL(blob);
   onStatus?.("Ready.");
-  return { blob, url, durationSec, still, mimeType, seed };
+  return { blob, url, durationSec, still, mimeType, seed, bytes: blob.size };
 }
