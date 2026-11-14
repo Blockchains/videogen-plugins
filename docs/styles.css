@@ -124,6 +124,13 @@ body::before {
   color: var(--ink);
 }
 
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
 .pill {
   font-size: 0.8rem;
   font-weight: 500;
@@ -133,6 +140,47 @@ body::before {
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+.pill-engine {
+  color: var(--ink-soft);
+  background: rgba(20, 33, 43, 0.06);
+  border-color: var(--line);
+}
+
+.pill-engine.is-fast {
+  color: #1d4a47;
+  background: rgba(143, 180, 174, 0.35);
+  border-color: rgba(47, 111, 106, 0.35);
+}
+
+.pill-engine.is-slow {
+  color: #6e4a1a;
+  background: rgba(217, 160, 122, 0.25);
+  border-color: rgba(181, 104, 74, 0.35);
+}
+
+.pill-engine.is-none {
+  color: #7a2e2e;
+  background: rgba(181, 74, 74, 0.14);
+  border-color: rgba(181, 74, 74, 0.35);
+}
+
+.toggle-select select {
+  font: 500 0.9rem var(--font-ui);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+
+.stats {
+  margin-left: auto;
+  align-self: center;
+  font-size: 0.82rem;
+  color: rgba(20, 33, 43, 0.62);
+  font-variant-numeric: tabular-nums;
 }
 
 .layout {

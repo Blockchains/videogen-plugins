@@ -53,7 +53,9 @@ export async function renderSoundtrackBuffer({
   sampleRate = 44100,
 } = {}) {
   const length = Math.ceil(durationSec * sampleRate);
-  const offline = new OfflineAudioContext(2, length, sampleRate);
+  const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!Offline) throw new Error("OfflineAudioContext is not supported in this browser");
+  const offline = new Offline(2, length, sampleRate);
   const master = offline.createGain();
   master.gain.value = 1;
   master.connect(offline.destination);
