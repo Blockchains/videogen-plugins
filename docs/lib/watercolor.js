@@ -20,17 +20,43 @@ export function hashSeed(str) {
 
 function parsePalette(style) {
   const s = (style || "").toLowerCase();
-  if (s.includes("sunset") || s.includes("warm")) {
+  if (/sunset|warm|golden|amber|orange/.test(s)) {
     return ["#f0e6d8", "#d9a07a", "#b5684a", "#6e4a3a", "#8aa0a8"];
   }
-  if (s.includes("forest") || s.includes("green")) {
+  if (/forest|green|leaf|moss|botanic/.test(s)) {
     return ["#e8efe6", "#9cb59a", "#5f8a68", "#2f4f3e", "#c2b8a3"];
   }
-  if (s.includes("night") || s.includes("ink")) {
+  if (/night|ink|midnight|dark|indigo/.test(s)) {
     return ["#e7eaf0", "#8b9bb0", "#40506a", "#1c2433", "#b7c4c0"];
+  }
+  if (/rose|pink|blush|coral/.test(s)) {
+    return ["#f4ebe8", "#d9a3a0", "#b86a6a", "#6e3a3f", "#a8a0a8"];
   }
   // default muted lagoon / watercolor paper
   return ["#f1eee6", "#9eb8b3", "#5f8f8a", "#2f4f55", "#c4b7a6"];
+}
+
+const SUBJECTS = [
+  { id: "glass", re: /hydrat|\bwater\b|glass|drink|thirst|\bsips?\b/ },
+  { id: "sun", re: /\bsun|sunrise|sunshine|morning|dawn|daylight|summer/ },
+  { id: "moon", re: /\bmoon|night|sleep|rest|dream|evening|star/ },
+  { id: "leaf", re: /plant|leaf|leaves|tree|forest|garden|grow|nature|green/ },
+  { id: "mountain", re: /mountain|hike|climb|peak|summit|trail|journey/ },
+  { id: "heart", re: /heart|love|health|care|kind|calm|breath/ },
+];
+
+/**
+ * Pick a centered subject from keywords: the script is consulted first, then
+ * the style paragraph. "watercolor" is stripped so it never reads as "water".
+ */
+export function detectSubject(script, style) {
+  for (const text of [script, style]) {
+    const lower = String(text || "")
+      .toLowerCase()
+      .replace(/watercolou?r/g, "");
+    for (const s of SUBJECTS) if (s.re.test(lower)) return s.id;
+  }
+  return "orb";
 }
 
 function blob(ctx, x, y, r, color, alpha, rand) {
@@ -97,22 +123,17 @@ export function paintWatercolor({
   }
   ctx.putImageData(grain, 0, 0);
 
-  // centered subject — glass of water if hydration-ish, else abstract orb
+  // centered subject chosen from script/style keywords
   const cx = width * 0.5;
   const cy = height * 0.48;
   const subjectH = height * 0.42;
   const subjectW = subjectH * 0.42;
-  const lower = (script + " " + style).toLowerCase();
-  const isGlass =
-    lower.includes("hydrat") ||
-    lower.includes("water") ||
-    lower.includes("glass") ||
-    lower.includes("drink");
+  const subject = detectSubject(script, style);
 
   ctx.save();
   ctx.translate(cx, cy);
 
-  if (isGlass) {
+  if (subject === "glass") {
     // soft contact shadow
     blob(ctx, 0, subjectH * 0.42, subjectW * 0.7, palette[4], 0.22, rand);
 
@@ -164,6 +185,89 @@ export function paintWatercolor({
 
     // specular bleed
     blob(ctx, -subjectW * 0.15, -subjectH * 0.05, subjectW * 0.18, "#ffffff", 0.18, rand);
+  } else if (subject === "sun") {
+    const r = subjectH * 0.3;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + rand() * 0.1;
+      blob(ctx, Math.cos(a) * r * 1.45, Math.sin(a) * r * 1.45, r * 0.16, "#e9b96b", 0.22, rand);
+    }
+    blob(ctx, 0, 0, r * 1.08, "#f1c57a", 0.3, rand);
+    blob(ctx, 0, 0, r, "#e9a95a", 0.45, rand);
+    blob(ctx, -r * 0.25, -r * 0.25, r * 0.4, "#fff3d6", 0.35, rand);
+  } else if (subject === "moon") {
+    const r = subjectH * 0.3;
+    blob(ctx, 0, 0, r * 1.2, palette[1], 0.2, rand);
+    blob(ctx, 0, 0, r, "#f3efe2", 0.85, rand);
+    // crescent bite in paper tone
+    blob(ctx, r * 0.42, -r * 0.18, r * 0.86, palette[0], 0.95, rand);
+    for (let i = 0; i < 6; i++) {
+      blob(ctx, (rand() - 0.5) * subjectH * 1.6, (rand() - 0.7) * subjectH * 0.9, 4 + rand() * 4, "#fff8e6", 0.8, rand);
+    }
+  } else if (subject === "leaf") {
+    ctx.save();
+    ctx.rotate(-0.5);
+    const L = subjectH * 0.5;
+    const grad = ctx.createLinearGradient(0, -L, 0, L);
+    grad.addColorStop(0, palette[2]);
+    grad.addColorStop(1, palette[3]);
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -L);
+    ctx.bezierCurveTo(L * 0.75, -L * 0.45, L * 0.75, L * 0.5, 0, L);
+    ctx.bezierCurveTo(-L * 0.75, L * 0.5, -L * 0.75, -L * 0.45, 0, -L);
+    ctx.fill();
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = palette[0];
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, -L * 0.9);
+    ctx.lineTo(0, L * 0.95);
+    for (let i = 1; i <= 4; i++) {
+      const y = -L * 0.6 + (i / 4) * L * 1.1;
+      ctx.moveTo(0, y);
+      ctx.lineTo(L * 0.35, y + L * 0.18);
+      ctx.moveTo(0, y);
+      ctx.lineTo(-L * 0.35, y + L * 0.18);
+    }
+    ctx.stroke();
+    ctx.restore();
+  } else if (subject === "mountain") {
+    const W = subjectH * 1.1;
+    const H = subjectH * 0.5;
+    const peak = (x, h, color, alpha) => {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x - W * 0.5, H * 0.5);
+      ctx.lineTo(x, H * 0.5 - h);
+      ctx.lineTo(x + W * 0.5, H * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    };
+    peak(-W * 0.25, H * 0.8, palette[1], 0.5);
+    peak(W * 0.2, H * 1.1, palette[3], 0.55);
+    peak(0, H * 0.9, palette[2], 0.5);
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = "#f7f4ec";
+    ctx.beginPath();
+    ctx.moveTo(W * 0.2, H * 0.5 - H * 1.1);
+    ctx.lineTo(W * 0.2 + W * 0.12, H * 0.5 - H * 1.1 + H * 0.26);
+    ctx.lineTo(W * 0.2 - W * 0.12, H * 0.5 - H * 1.1 + H * 0.26);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  } else if (subject === "heart") {
+    const s = subjectH * 0.26;
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = palette[2];
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.9);
+    ctx.bezierCurveTo(-s * 1.6, -s * 0.2, -s * 0.8, -s * 1.3, 0, -s * 0.5);
+    ctx.bezierCurveTo(s * 0.8, -s * 1.3, s * 1.6, -s * 0.2, 0, s * 0.9);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    blob(ctx, -s * 0.35, -s * 0.4, s * 0.3, "#ffffff", 0.22, rand);
   } else {
     blob(ctx, 0, 20, subjectH * 0.28, palette[2], 0.35, rand);
     blob(ctx, -20, -10, subjectH * 0.18, palette[3], 0.25, rand);

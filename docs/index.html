@@ -15,7 +15,10 @@
     <main class="app">
       <header class="top">
         <h1 class="brand">VideoGen</h1>
-        <span class="pill">Runs fully offline in your browser</span>
+        <div class="pills">
+          <span class="pill">Runs fully offline in your browser</span>
+          <span id="engine-pill" class="pill pill-engine" title="Detected encoder route">Detecting encoder…</span>
+        </div>
       </header>
 
       <div class="layout">
@@ -55,6 +58,13 @@
               <input id="narration" type="checkbox" checked />
               Narration
             </label>
+            <label class="toggle toggle-select">
+              Encoder
+              <select id="engine" aria-label="Encoder route">
+                <option value="auto" selected>Auto (fastest)</option>
+                <option value="realtime">Realtime recorder</option>
+              </select>
+            </label>
           </div>
 
           <div class="actions">
@@ -76,6 +86,7 @@
           <div class="stage-bar">
             <button id="regen" class="btn-ghost" type="button" disabled>Regenerate look</button>
             <button id="download" class="btn-primary" type="button" disabled>Download WebM</button>
+            <span id="stats" class="stats" aria-live="polite"></span>
           </div>
         </section>
       </div>
