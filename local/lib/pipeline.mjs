@@ -95,8 +95,9 @@ async function probeImage(ffprobePath, imagePath) {
   }
 }
 
-async function prepareImage({ imagePath, workDir, style, det, warnings, width, height }) {
+async function prepareImage({ imagePath, workDir, style, det, warnings, width, height, strict }) {
   if (imagePath) {
+    let problem = null;
     try {
       await stat(imagePath);
       if (await probeImage(det.ffprobe?.path, imagePath)) {
@@ -104,10 +105,16 @@ async function prepareImage({ imagePath, workDir, style, det, warnings, width, h
         await copyFile(imagePath, dest);
         return { path: dest, source: "provided" };
       }
-      warnings.push(`imagePath "${imagePath}" is not a decodable image; using procedural still`);
+      problem = `imagePath "${imagePath}" is not a decodable image`;
     } catch {
-      warnings.push(`imagePath "${imagePath}" not found; using procedural still`);
+      problem = `imagePath "${imagePath}" not found`;
     }
+    if (strict) {
+      const err = new Error(problem);
+      err.code = "EBADIMAGE";
+      throw err;
+    }
+    warnings.push(`${problem}; using procedural still`);
   }
   const dest = path.join(workDir, "scene.png");
   const [paper, c1, c2, c3] = palette(style);
@@ -422,7 +429,7 @@ export async function scriptToVideo({
   progress("prepare", 8, "Synthesizing narration and preparing the still");
   const tPrep = performance.now();
   const [scene, narration] = await Promise.all([
-    prepareImage({ imagePath: chosenImage, workDir, style, det, warnings, width, height }),
+    prepareImage({ imagePath: chosenImage, workDir, style, det, warnings, width, height, strict }),
     buildNarration({ cues, script: cleanScript, workDir, voice, rate, det, warnings, strict }),
   ]);
   timings.prepareMs = Math.round(performance.now() - tPrep);

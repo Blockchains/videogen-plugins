@@ -1,6 +1,6 @@
 {
   "name": "videogen",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Local Cursor/Grok VideoGen fork — script to narrated video with captions and music (no videogen.io cloud).",
   "mcpServers": {
     "videogen": {

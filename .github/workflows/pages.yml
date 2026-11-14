@@ -33,6 +33,8 @@ jobs:
           test -f docs/lib/audio.js
           test -f docs/lib/narration.js
           test -f docs/lib/watercolor.js
+          test -f docs/lib/webm.js
+          test -f docs/lib/capabilities.js
           test -f docs/favicon.svg
 
           if grep -RInE 'https?://(cdn\.|unpkg\.|jsdelivr\.|mcp\.videogen\.io|api\.videogen\.io)' \
@@ -41,6 +43,27 @@ jobs:
             exit 1
           fi
           echo "docs/ studio OK"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install ffmpeg + espeak-ng
+        run: sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg espeak-ng fonts-dejavu-core
+
+      - name: Unit tests (pure helpers + WebM muxer)
+        run: npm test
+
+      - name: Local pipeline smoke (doctor + fast render)
+        run: |
+          set -euo pipefail
+          node local/cli.mjs doctor
+          node local/cli.mjs script-to-video \
+            --script "Continuous integration render. Two sentences, timed captions." \
+            --quality fast --out /tmp/ci-render --quiet
+          ffprobe -v error -show_entries stream=codec_name:format=duration -of compact /tmp/ci-render/export.mp4
+          test -f /tmp/ci-render/work/captions.srt
 
   deploy:
     needs: verify
